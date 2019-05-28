@@ -38,8 +38,8 @@ public class articleDaoImpl extends baseDao<articleModel> implements articleDao 
 	}
 
 	@Override
-	public List<articleModel> getAllList() {
-		String sqlString = "SELECT * FROM "+tableName+" WHERE `isDeleted` = 0 ";
+	public List<articleModel> getAllList(String limitString) {
+		String sqlString = "SELECT * FROM "+tableName+" WHERE `isDeleted` = 0 " + limitString;
 		return super.getList(sqlString);
 	}
 

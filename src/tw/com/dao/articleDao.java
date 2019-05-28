@@ -27,7 +27,7 @@ public interface articleDao {
 	 * 获取所有的文章
 	 * @return
 	 */
-	public abstract List<articleModel> getAllList();
+	public abstract List<articleModel> getAllList(String limitString);
 	
 	/**
 	 * 获取一片文章

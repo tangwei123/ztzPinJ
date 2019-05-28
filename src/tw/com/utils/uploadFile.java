@@ -107,7 +107,6 @@ public class uploadFile {
 			e.printStackTrace();
 		}
 		return mapData;
-		
 	}
 	
 }

@@ -1,10 +1,14 @@
 package tw.com.controller;
 
+import static org.hamcrest.CoreMatchers.nullValue;
+
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -32,7 +36,6 @@ public class articleController extends HttpServlet{
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		req.setCharacterEncoding("utf-8");
 		resp.setCharacterEncoding("utf-8");
-//		System.out.println("get方式");
 		Enumeration<String> parametersEnumeration = req.getParameterNames();
 		while (parametersEnumeration.hasMoreElements()) {
 			String string = (String) parametersEnumeration.nextElement();
@@ -42,7 +45,6 @@ public class articleController extends HttpServlet{
 					Method method = this.getClass().getDeclaredMethod(doFunString, HttpServletRequest.class, HttpServletResponse.class);
 					method.invoke(this, req, resp);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -53,7 +55,6 @@ public class articleController extends HttpServlet{
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		req.setCharacterEncoding("utf-8");
 		resp.setCharacterEncoding("utf-8");
-//		System.out.println("post方式");
 		Enumeration<String> parametersEnumeration = req.getParameterNames();
 		while (parametersEnumeration.hasMoreElements()) {
 			String string = (String) parametersEnumeration.nextElement();
@@ -63,59 +64,58 @@ public class articleController extends HttpServlet{
 					Method method = this.getClass().getDeclaredMethod(doFunString, HttpServletRequest.class, HttpServletResponse.class);
 					method.invoke(this, req, resp);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 		}
-		
-//		String queryString = req.getQueryString();//先获取到action=editOne&id=4 然后用&分隔数据，然后在用=分隔数据 再去反射操作
-//		String[] queryArray = queryString.split("&");
-//		for(String parameterString:queryArray) {
-//			String[] actionStr = parameterString.split("=");
-//			if(actionStr[0].equals("action")) {
-//				String functionNameString = actionStr[1];//拿到action的方法名，接下来通过反射的方式去执行方法
-//				try {
-//					Method method = this.getClass().getDeclaredMethod(functionNameString, HttpServletRequest.class, HttpServletResponse.class);
-//					method.invoke(this, req, resp);
-//				} catch (Exception e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//			}
-//		}
+	}
+	
+	private void addOne(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		req.getRequestDispatcher("/addArticle.jsp").forward(req, resp);
+	}
+	
+	private void doAddArticle(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		articleService asticleservice = factoryService.getArticleService();
+		articleModel articlemodel = new articleModel();
+		uploadFile fileUpload = new uploadFile();
+		fileUpload.sizeThreshold = 300 * 1024;
+		fileUpload.fileSize = 3 * 1024 * 1024;
+		fileUpload.totalSize = 20 * 1024 * 1024;
+		fileUpload.tmpPath = this.getServletContext().getRealPath("/WEB-INF/tmp");
+		fileUpload.savePath = this.getServletContext().getRealPath("/WEB-INF/upload");
+		Map<String, String> mapData = fileUpload.doUpload(req);
+		try {
+			BeanUtils.populate(articlemodel, mapData);
+			Date nowDate = new Date();
+			SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			String dateString = dateformat.format(nowDate);
+			articlemodel.setAddTime(dateString);
+			asticleservice.addOne(articlemodel);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void editOne(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		resp.setCharacterEncoding("utf-8");
-//		String queryString = req.getQueryString();//这块注释掉的代码，有点舍近求远的获取url参数，并判断参数是否存在
-//		String[] queryArray = queryString.split("&");
-//		Map<String, String> queryData = new HashMap<String, String>();
-//		for(String parameterString:queryArray) {
-//			String[] actionStr = parameterString.split("=");
-//			if(!actionStr[0].equals("action")) {
-//				queryData.put(actionStr[0], actionStr[1]);
-//			}
-//		}
-//		if(!queryData.containsKey("id")) {
-//			resp.getWriter().write("关键参数错误！");
-//		}
 		String idValue = req.getParameter("id");
 		if(idValue == null) {
-//			req.setAttribute("errMessage", "缺少ID相关参数，无法继续操作");
-//			this.getServletContext().setAttribute();//设置错误提示信息
-			resp.sendRedirect("/ztzPin/err.jsp");//跳转到错误页面去
-//			req.getRequestDispatcher("err.jsp").forward(req, resp);
+			req.setAttribute("errMessage", "缺少ID相关参数，无法继续操作");
+			req.getRequestDispatcher("err.jsp").forward(req, resp);
 		}else {
 			articleService asticleservice = factoryService.getArticleService();
 			articleModel articlemodel = asticleservice.getOneById(new Integer(idValue));
-//			System.out.println(articlemodel.toString());
-//			System.out.println(this.getServletContext().getContextPath());
 			req.setAttribute("articleInfo", articlemodel);
 			req.getRequestDispatcher("articleDetail2.jsp").forward(req, resp);;
 		}
 	}
 	
+	/**
+	 * 没有 enctype="multipart/form-data"
+	 * @param req
+	 * @param resp
+	 * @throws ServletException
+	 * @throws IOException
+	 */
 	private void doEditArticle(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		
 		String idValue = req.getParameter("id");
@@ -128,7 +128,6 @@ public class articleController extends HttpServlet{
 				req.setAttribute("infoMessage", "该条数据已被删除不能继续编辑");
 				req.getRequestDispatcher("/info.jsp").forward(req, resp);
 			}else {
-//				System.out.println(articlemodel.toString());
 				try {
 					System.out.println(req.getParameter("title"));
 					System.out.println(req.getParameter("des"));					
@@ -146,15 +145,20 @@ public class articleController extends HttpServlet{
 						req.setAttribute("infoMessage", "编辑数据失败");
 						req.getRequestDispatcher("/info.jsp").forward(req, resp);
 					}
-//					System.out.println(articlemodel.toString());
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}	
 		}
 	}
 	
+	/**
+	 * 有 enctype="multipart/form-data"
+	 * @param req
+	 * @param resp
+	 * @throws ServletException
+	 * @throws IOException
+	 */
 	private void doEditArticle2(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		String idValue = req.getParameter("id");
 		if(idValue == null) {
@@ -173,19 +177,26 @@ public class articleController extends HttpServlet{
 				fileUpload.tmpPath = this.getServletContext().getRealPath("/WEB-INF/tmp");
 				fileUpload.savePath = this.getServletContext().getRealPath("/WEB-INF/upload");
 				Map<String, String> mapData = fileUpload.doUpload(req);
-//				for(String item:mapData.keySet()) {
-//					System.out.println(mapData.get(item));
-//				}
 				try {
 					BeanUtils.populate(articlemodel, mapData);
 					asticleservice.editOne(articlemodel);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				
-				
 			}
+		}
+	}
+	
+	private void listArticle(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		String pageInfo = req.getParameter("page");
+		if(pageInfo == null) {
+			pageInfo = "1";
+		}
+		List<articleModel> articlelist = null;
+		articleService articleservice = factoryService.getArticleService();
+		articlelist = articleservice.getList(pageInfo);
+		for(articleModel articleInfo:articlelist) {
+			System.out.println(articleInfo.toString());
 		}
 	}
 }
